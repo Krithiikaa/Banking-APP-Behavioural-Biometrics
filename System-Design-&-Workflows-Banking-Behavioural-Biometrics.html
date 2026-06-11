@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Behavioural Biometrics — System Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Montserrat',sans-serif;
+  background:#faf8f4;
+  background-image:radial-gradient(circle,#c8c2b4 1.2px,transparent 1.2px);
+  background-size:22px 22px;
+  color:#2c2c2c;min-height:100vh;padding:50px 36px;
+}
+h1{font-family:'Playfair Display',serif;text-align:center;font-size:36px;font-weight:800;color:#1a1a1a;margin-bottom:8px;letter-spacing:-0.5px}
+.subtitle{text-align:center;font-size:15px;color:#787470;margin-bottom:48px;letter-spacing:0.3px;font-weight:400}
+.badge-row{display:flex;justify-content:center;gap:10px;margin-bottom:14px}
+.badge{padding:5px 16px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:0.2px}
+.b-blue{background:#e8f0fe;color:#1a56db;border:1px solid #c3d9f7}
+.b-purple{background:#f0ebff;color:#6d28d9;border:1px solid #d8ccf5}
+.b-pink{background:#fce7f3;color:#be185d;border:1px solid #f5c2d9}
+
+.diagram{max-width:1100px;margin:0 auto}
+.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin:56px 0 22px;padding-left:14px;border-left:4px solid #1a1a1a;color:#1a1a1a}
+.section-title:first-of-type{margin-top:12px}
+
+/* ── SCROLL ANIMATION ── */
+.fade-in{opacity:0;transform:translateY(28px);transition:opacity 0.7s ease,transform 0.7s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+
+.flow{display:flex;flex-direction:column;gap:0;align-items:center}
+.flow-row{display:flex;align-items:stretch;gap:14px;width:100%}
+
+/* ── ZONE CARDS ── */
+.zone{border-radius:14px;padding:22px 24px;flex:1;position:relative;overflow:hidden;transition:transform 0.25s,box-shadow 0.25s;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.zone:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.07)}
+.zone::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:14px 14px 0 0}
+.zone h3{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.zone h3 .icon{font-size:20px}
+.zone p{font-size:14px;line-height:1.7;opacity:0.8}
+.zone .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.zone .tag{padding:4px 12px;border-radius:8px;font-size:12px;font-weight:500}
+
+.z-blue{background:#f0f6ff;border:1px solid #c3d9f7}.z-blue::before{background:#3b82f6}.z-blue h3{color:#1e40af}.z-blue .tag{background:#dbeafe;color:#1e40af}
+.z-purple{background:#f5f0ff;border:1px solid #d8ccf5}.z-purple::before{background:#8b5cf6}.z-purple h3{color:#5b21b6}.z-purple .tag{background:#ede9fe;color:#5b21b6}
+.z-teal{background:#effcf8;border:1px solid #a7f3d0}.z-teal::before{background:#14b8a6}.z-teal h3{color:#065f46}.z-teal .tag{background:#d1fae5;color:#065f46}
+.z-amber{background:#fffbeb;border:1px solid #fde68a}.z-amber::before{background:#f59e0b}.z-amber h3{color:#92400e}.z-amber .tag{background:#fef3c7;color:#92400e}
+.z-coral{background:#fef2f2;border:1px solid #fecaca}.z-coral::before{background:#ef4444}.z-coral h3{color:#991b1b}.z-coral .tag{background:#fee2e2;color:#991b1b}
+.z-green{background:#f0fdf4;border:1px solid #bbf7d0}.z-green::before{background:#22c55e}.z-green h3{color:#166534}.z-green .tag{background:#dcfce7;color:#166534}
+.z-gray{background:#f8f7f4;border:1px solid #d6d3cc}.z-gray::before{background:#78716c}.z-gray h3{color:#44403c}.z-gray .tag{background:#f0eeea;color:#44403c}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+.connector{display:flex;justify-content:center;padding:10px 0}
+.connector svg{width:24px;height:36px}
+
+.pipeline{display:flex;align-items:center;gap:0;overflow-x:auto;padding:12px 0}
+.pipe-step{min-width:140px;padding:16px 18px;border-radius:12px;text-align:center;position:relative}
+.pipe-step h4{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;margin-bottom:5px}
+.pipe-step p{font-size:12px;opacity:0.75;line-height:1.5}
+.pipe-arrow{display:flex;align-items:center;padding:0 5px}
+.pipe-arrow svg{width:30px;height:16px}
+code{font-family:'Montserrat',monospace}
+</style>
+</head>
+<body>
+
+<div class="badge-row">
+  <span class="badge b-blue">HDFC Bank Clone</span>
+  <span class="badge b-purple">Behavioural Biometrics</span>
+  <span class="badge b-pink">Full System Architecture</span>
+</div>
+<h1>🏦 Behavioural Biometrics Architecture</h1>
+<p class="subtitle">Android + Desktop · 39 Sensors · ML Pipeline · Risk Engine · Real-time Authentication</p>
+
+<div class="diagram">
+
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section-title">1 · High-Level System Flow</div>
+
+<div class="pipeline">
+  <div class="pipe-step z-blue"><h4>📱 Client App</h4><p>HDFC clone<br>Android / Desktop</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-amber"><h4>⚡ Edge Processing</h4><p>39 sensors → 300 features<br>Privacy filter on-device</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-gray"><h4>🔒 HTTPS/2</h4><p>JWT + Device<br>Attestation</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-purple"><h4>⚙️ Stream Processing</h4><p>Kafka → Flink<br>30s session windows</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-teal"><h4>🧠 ML Inference</h4><p>Per-user LSTM<br>Risk score 0–1</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-coral"><h4>🛡️ Risk Decision</h4><p>ALLOW / STEP-UP<br>/ BLOCK</p></div>
+</div>
+
+<div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section-title">2 · Android App — Layered Architecture</div>
+
+<div class="flow">
+  <div class="zone z-blue" style="width:100%">
+    <h3><span class="icon">📱</span> UI Layer — HDFC Bank Clone (React Native / Jetpack Compose)</h3>
+    <p>Pixel-faithful clone of HDFC banking app. Every screen captures biometric signals invisibly in the background.</p>
+    <div class="tags">
+      <span class="tag">Login — typing cadence</span>
+      <span class="tag">Dashboard — touch heatmap</span>
+      <span class="tag">Transfer — keystroke timing</span>
+      <span class="tag">Settings — usage patterns</span>
+    </div>
+  </div>
+
+  <div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#93a3b8" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+  <div class="zone z-purple" style="width:100%">
+    <h3><span class="icon">🔧</span> Sensor Abstraction Layer — 39 Sensors (Background Service)</h3>
+    <p>Runs silently as a background service. Polls hardware sensors at 1–200 Hz. Events buffered in circular arrays.</p>
+    <div class="tags">
+      <span class="tag">MotionCollector — Accel+Gyro 100Hz</span>
+      <span class="tag">TouchCollector — X/Y/Pressure/Velocity</span>
+      <span class="tag">LocationCollector — GPS+WiFi+BLE</span>
+      <span class="tag">EnvCollector — Light+Proximity+Baro</span>
+      <span class="tag">BiometricCollector — Fingerprint+Face+PPG</span>
+      <span class="tag">SystemCollector — Screen+Battery+Apps</span>
+    </div>
+  </div>
+
+  <div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#93a3b8" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+  <div class="zone z-amber" style="width:100%">
+    <h3><span class="icon">⚡</span> Edge Processing — On-Device (Privacy-Preserving)</h3>
+    <p>Raw sensor data NEVER leaves the device. Features computed locally: mean, std, FFT, DTW gestures. Privacy filter strips PII.</p>
+    <div class="tags">
+      <span class="tag">Feature Extractor → 300 floats/2s</span>
+      <span class="tag">TFLite pre-screener</span>
+      <span class="tag">SQLite ring buffer (10MB)</span>
+      <span class="tag">GPS→geohash-6 | Mic→energy only</span>
+    </div>
+  </div>
+
+  <div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#93a3b8" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+  <div class="grid-2">
+    <div class="zone z-teal">
+      <h3><span class="icon">🌐</span> Network Transport</h3>
+      <p>HTTPS/2 batch upload every 2s with JWT + Play Integrity. WebSocket for real-time risk decisions.</p>
+      <div class="tags"><span class="tag">Certificate pinning</span><span class="tag">Device attestation</span></div>
+    </div>
+    <div class="zone z-coral">
+      <h3><span class="icon">🔐</span> Security Layer</h3>
+      <p>Android Keystore (TEE). AES-256-GCM at rest. Root/emulator detection. Accessibility abuse guard.</p>
+      <div class="tags"><span class="tag">SafetyNet</span><span class="tag">Frida detection</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section-title">3 · Desktop App — Layered Architecture</div>
+
+<div class="flow">
+  <div class="zone z-blue" style="width:100%">
+    <h3><span class="icon">🖥️</span> UI Layer — HDFC NetBanking Clone (Electron / React)</h3>
+    <p>Browser extension or Electron app. Invisible overlay captures keyboard/mouse events via low-level hooks.</p>
+    <div class="tags">
+      <span class="tag">Login — dwell + flight time</span>
+      <span class="tag">Dashboard — mouse trajectories</span>
+      <span class="tag">Win32 hooks (SetWindowsHookEx)</span>
+      <span class="tag">Chrome/FF content script</span>
+    </div>
+  </div>
+
+  <div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#93a3b8" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+  <div class="zone z-purple" style="width:100%">
+    <h3><span class="icon">🔧</span> Desktop Sensor Signals (15+ Signals)</h3>
+    <p>Fewer hardware sensors but RICHER keyboard/mouse biometrics (50-80 features vs 5-10 on mobile).</p>
+    <div class="tags">
+      <span class="tag">Keyboard — dwell, flight, digraph</span>
+      <span class="tag">Mouse — velocity, curvature, Bezier</span>
+      <span class="tag">Camera — face presence, blink rate</span>
+      <span class="tag">Audio — mic energy, KB acoustics</span>
+      <span class="tag">Browser fingerprint — Canvas, WebGL</span>
+      <span class="tag">Session — tab switches, idle, copy-paste</span>
+    </div>
+  </div>
+
+  <div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#93a3b8" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+  <div class="zone z-amber" style="width:100%">
+    <h3><span class="icon">⚡</span> Edge Processing — Web Worker / Electron Main Process</h3>
+    <p>Feature extraction in dedicated Web Worker (off main thread). IndexedDB ring buffer. Same privacy filters as Android.</p>
+    <div class="tags">
+      <span class="tag">Web Worker — no UI jank</span>
+      <span class="tag">IndexedDB buffer (60s)</span>
+      <span class="tag">IP→/24 subnet | Camera→boolean</span>
+      <span class="tag">Same Collection API as Android</span>
+    </div>
+  </div>
+</div>
+
+<div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section-title">4 · Backend Microservices</div>
+
+<div class="pipeline" style="flex-wrap:wrap;justify-content:center">
+  <div class="pipe-step z-gray"><h4>🚪 API Gateway</h4><p>Kong — JWT, rate limit<br>TLS termination</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-amber"><h4>📥 Collection</h4><p>Go — schema validation<br>dedup via Redis</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-purple"><h4>⚙️ Flink</h4><p>Stream processor<br>30s session windows</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-teal"><h4>🧠 Inference</h4><p>TorchServe — per-user<br>LSTM scoring</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-coral"><h4>🛡️ Risk Engine</h4><p>FastAPI — ML + Rules<br>decision fusion</p></div>
+  <div class="pipe-arrow"><svg viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="pipe-step z-green"><h4>🔌 Session Mgr</h4><p>Node.js — WebSocket<br>push to clients</p></div>
+</div>
+
+<div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section-title">5 · Data Stores</div>
+
+<div class="grid-3">
+  <div class="zone z-purple"><h3><span class="icon">📨</span> Kafka (MSK)</h3><p>Event streaming backbone. 5 topics, 7-day retention, 3× replication.</p></div>
+  <div class="zone z-blue"><h3><span class="icon">⏱️</span> TimescaleDB</h3><p>Time-series feature vectors. 90 days raw, 1 year aggregated.</p></div>
+  <div class="zone z-gray"><h3><span class="icon">🐘</span> PostgreSQL</h3><p>User profiles, rules, immutable audit log (no UPDATE/DELETE).</p></div>
+  <div class="zone z-coral"><h3><span class="icon">⚡</span> Redis Cluster</h3><p>Model cache (TTL 30m), session state, dedup. Sub-ms reads.</p></div>
+  <div class="zone z-amber"><h3><span class="icon">☁️</span> S3 Storage</h3><p>MLflow model artifacts (.pt), encrypted raw backups.</p></div>
+  <div class="zone z-green"><h3><span class="icon">🔍</span> Elasticsearch</h3><p>Fraud ops search. Kibana dashboards for real-time monitoring.</p></div>
+</div>
+
+<div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section-title">6 · ML Training & Prediction Pipeline</div>
+
+<div class="grid-2" style="margin-bottom:16px">
+  <div class="zone z-green">
+    <h3><span class="icon">📝</span> Enrollment (Sessions 1–5)</h3>
+    <p>User performs normal banking. All sensor events labeled GENUINE. LSTM autoencoder trained on 300-float feature vectors. Model + scaler + threshold stored in MLflow registry. Baseline profile cached in Redis.</p>
+    <div class="tags">
+      <span class="tag">5 sessions to enroll</span>
+      <span class="tag">LSTM Autoencoder</span>
+      <span class="tag">P99 threshold calibration</span>
+    </div>
+  </div>
+  <div class="zone z-teal">
+    <h3><span class="icon">🔍</span> Live Inference (Every 2s)</h3>
+    <p>Feature vector scored against enrolled model. Reconstruction error → risk_score. Per-sensor anomaly flags raised at 3σ. Score formula: 0.6×ML + 0.25×anomaly + 0.15×context.</p>
+    <div class="tags">
+      <span class="tag">Redis model cache (2ms hot)</span>
+      <span class="tag">End-to-end &lt;200ms</span>
+      <span class="tag">Isolation forest for new patterns</span>
+    </div>
+  </div>
+</div>
+
+<div class="zone z-amber" style="width:100%">
+  <h3><span class="icon">🔄</span> Continuous Retraining</h3>
+  <p>Confirmed-genuine sessions added to training corpus. Nightly Airflow DAG fine-tunes model (LR=0.0001). New model validated on holdout → canary deploy 10% for 24h → promote. Drift detection: 7-day rising error triggers re-enrollment.</p>
+  <div class="tags">
+    <span class="tag">Nightly retraining</span>
+    <span class="tag">Canary deploy</span>
+    <span class="tag">Drift detection</span>
+    <span class="tag">No catastrophic forgetting</span>
+  </div>
+</div>
+
+<div class="connector"><svg viewBox="0 0 24 36"><path d="M12 4v24M8 22l4 6 4-6" fill="none" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section-title">7 · Risk Decision Matrix</div>
+
+<div class="flow" style="gap:8px">
+  <div class="zone z-green" style="width:100%;display:flex;align-items:center;gap:16px">
+    <code style="color:#86efac;font-size:13px;min-width:100px">0.00 – 0.30</code>
+    <span class="badge" style="background:#14532d;color:#86efac;border:1px solid #22c55e44;min-width:80px;text-align:center">✅ ALLOW</span>
+    <p style="flex:1">Transparent. Session continues. No user interruption. Event logged to audit trail.</p>
+  </div>
+  <div class="zone z-amber" style="width:100%;display:flex;align-items:center;gap:16px">
+    <code style="color:#fbbf24;font-size:13px;min-width:100px">0.30 – 0.55</code>
+    <span class="badge" style="background:#4a3408;color:#fbbf24;border:1px solid #f59e0b44;min-width:80px;text-align:center">🟡 FLAG</span>
+    <p style="flex:1">Log only. Visible to fraud ops in dashboard. Used for model retraining data.</p>
+  </div>
+  <div class="zone z-amber" style="width:100%;display:flex;align-items:center;gap:16px;border-color:#78350f">
+    <code style="color:#fbbf24;font-size:13px;min-width:100px">0.55 – 0.70</code>
+    <span class="badge" style="background:#78350f;color:#fbbf24;border:1px solid #b4590644;min-width:80px;text-align:center">🟠 STEP-UP</span>
+    <p style="flex:1">Silent biometric re-auth (fingerprint/face). If fail → OTP to registered mobile.</p>
+  </div>
+  <div class="zone z-coral" style="width:100%;display:flex;align-items:center;gap:16px">
+    <code style="color:#fca5a5;font-size:13px;min-width:100px">0.70 – 0.85</code>
+    <span class="badge" style="background:#5c1d1d;color:#fca5a5;border:1px solid #ef444444;min-width:80px;text-align:center">🔴 HIGH-RISK</span>
+    <p style="flex:1">Biometric + OTP required. Maker-checker for transfers > ₹1L. Digital signature logged.</p>
+  </div>
+  <div class="zone z-coral" style="width:100%;display:flex;align-items:center;gap:16px;border-color:#7f1d1d">
+    <code style="color:#fca5a5;font-size:13px;min-width:100px">0.85 – 1.00</code>
+    <span class="badge" style="background:#7f1d1d;color:#fecaca;border:1px solid #dc262644;min-width:80px;text-align:center">🚫 BLOCK</span>
+    <p style="flex:1">Session terminated. Transactions cancelled. Account flagged. Ops alert + SMS + email.</p>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:56px;padding:28px 24px;border-top:1px solid #d6d3cc">
+  <p style="color:#78716c;font-size:13px;font-weight:500;margin-bottom:14px">🏦 Behavioural Biometrics for Banking · HDFC Clone · Android + Desktop · 39 Sensors · Real-time ML Authentication</p>
+  <p style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:10px">Krithika</p>
+  <div style="display:flex;justify-content:center;gap:16px;align-items:center">
+    <a href="https://github.com/Krithiikaa" target="_blank" rel="noopener" title="GitHub" style="color:#44403c;transition:color 0.2s;display:flex;align-items:center" onmouseover="this.style.color='#1a1a1a'" onmouseout="this.style.color='#44403c'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+    </a>
+    <a href="https://ai-gizmo-29544405.figma.site/" target="_blank" rel="noopener" title="Portfolio" style="color:#44403c;transition:color 0.2s;display:flex;align-items:center" onmouseover="this.style.color='#1a1a1a'" onmouseout="this.style.color='#44403c'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+    </a>
+  </div>
+</div>
+
+</div>
+
+<script>
+// Scroll-triggered fade-in animation
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.zone, .pipe-step, .section-title, .connector, .pipeline, .grid-2, .grid-3').forEach(el => {
+  el.classList.add('fade-in');
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
