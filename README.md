@@ -7,6 +7,17 @@
 > **Core Idea**: Capture 39 sensor signals from the user's device during banking sessions, train a per-user behavioural model, and score every session in real-time to detect impostors.
 
 ---
+## 🚀 Live Preview
+
+> • [🎨 System Design ⚡ - Live Demo ](https://system-design-behavioural-biometrics.edgeone.app/) •
+ 
+> • [🎨 Architecture ⚡ - Live Demo ](https://krithiikaa.github.io/Banking-APP-Behavioural-Biometrics/) •
+
+> • [🎨 Mobile UI Design ⚡ - Live Demo ](https://stitch.withgoogle.com/preview/10837085091759448495?node-id=9fba777b8baf453395c5302f181209c6) •
+
+> • [🎨 Desktop UI Design ⚡ - Live Demo ](https://stitch.withgoogle.com/preview/5980981783955325194?node-id=1cc9328b12a441349fd81d3c5f37d7cb) •
+
+---
 
 ## 1. High-Level System Design Diagram
 
