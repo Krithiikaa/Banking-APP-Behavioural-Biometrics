@@ -6,6 +6,7 @@
 > **Base App**: HDFC Bank Clone (Android + Desktop)  
 > **Core Idea**: Capture 39 sensor signals from the user's device during banking sessions, train a per-user behavioural model, and score every session in real-time to detect impostors.
 
+<p align="center"> <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjZ1b3l3aGw1emZyaGxvNjlzeWZydGxzdmN4enUza2djcnRucTl3MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/duGB9Or2KTW4aB4KhY/giphy.gif"> </p>
 ---
 ## 🚀 Live Preview
 
