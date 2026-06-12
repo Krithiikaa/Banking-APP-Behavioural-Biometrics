@@ -411,7 +411,7 @@ Your existing project already implements a simplified version of this system:
 
 ## 8. Implementation Plan (Phased)
 
-### Phase 1: Foundation (Weeks 1-3)
+### Phase 1: Foundation 
 > Expand keystroke collection + build Android UI
 
 - [ ] Clone HDFC Bank app UI (React Native / Jetpack Compose)
@@ -420,7 +420,7 @@ Your existing project already implements a simplified version of this system:
 - [ ] Set up SQLite ring buffer for on-device storage
 - [ ] Expand feature vector from 15 → 50+ features
 
-### Phase 2: Full Sensor Suite (Weeks 4-6)
+### Phase 2: Full Sensor Suite 
 > Add all 39 sensors + edge processing
 
 - [ ] Add TouchCollector, LocationCollector, EnvCollector
@@ -429,7 +429,7 @@ Your existing project already implements a simplified version of this system:
 - [ ] Add TFLite on-device pre-screener
 - [ ] Implement root/emulator detection
 
-### Phase 3: Backend Pipeline (Weeks 7-10)
+### Phase 3: Backend Pipeline
 > Set up streaming infrastructure
 
 - [ ] Deploy Kafka cluster with 5 topics
@@ -438,7 +438,7 @@ Your existing project already implements a simplified version of this system:
 - [ ] Set up TimescaleDB for feature vector storage
 - [ ] Configure API Gateway (Kong) with JWT + rate limiting
 
-### Phase 4: ML Platform (Weeks 11-14)
+### Phase 4: ML Platform 
 > Replace RandomForest with LSTM Autoencoder
 
 - [ ] Train per-user LSTM Autoencoder on enrollment data
@@ -447,7 +447,7 @@ Your existing project already implements a simplified version of this system:
 - [ ] Implement risk score computation (reconstruction error based)
 - [ ] Deploy Airflow DAG for nightly retraining
 
-### Phase 5: Risk Engine & Decisions (Weeks 15-17)
+### Phase 5: Risk Engine & Decisions
 > Fuse ML + rules + device trust
 
 - [ ] Build Risk Engine (FastAPI) with decision fusion
@@ -456,7 +456,7 @@ Your existing project already implements a simplified version of this system:
 - [ ] Build immutable audit log (append-only PostgreSQL)
 - [ ] Integrate step-up auth flows (biometric + OTP)
 
-### Phase 6: Desktop App (Weeks 18-20)
+### Phase 6: Desktop App 
 > Port to Electron / browser extension
 
 - [ ] Build HDFC NetBanking clone (Electron + React)
@@ -465,7 +465,7 @@ Your existing project already implements a simplified version of this system:
 - [ ] Reuse same backend pipeline (shared Collection API)
 - [ ] Validate with desktop-specific ML features
 
-### Phase 7: HITL & Governance (Weeks 21-23)
+### Phase 7: HITL & Governance 
 > Human-in-the-loop + compliance
 
 - [ ] Build fraud ops dashboard (Kibana + custom React)
@@ -475,7 +475,7 @@ Your existing project already implements a simplified version of this system:
 - [ ] Implement right-to-explanation for blocked transactions
 - [ ] Audit log retention policies (RBI: 7 years)
 
-### Phase 8: Hardening & Launch (Weeks 24-26)
+### Phase 8: Hardening & Launch 
 > Security, performance, compliance
 
 - [ ] Penetration testing + security audit
