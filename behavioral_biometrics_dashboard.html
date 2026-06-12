@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Behavioural Biometrics — Interactive Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ─── BASE STYLES ─── */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #f5f3ef;
+      color: #2c2c2c;
+      min-height: 100vh;
+      padding: 30px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow-x: hidden;
+    }
+
+    /* ─── LOADER ─── */
+    #loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #faf8f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease, visibility 0.5s;
+    }
+    .spinner {
+      border: 3px solid #e6e4de;
+      border-top: 3px solid #1a1a1a;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ─── NOTEBOOK CONTAINER ─── */
+    .notebook-container {
+      max-width: 1200px;
+      width: 95%;
+      background-color: #faf8f4;
+      background-image: radial-gradient(circle, #c8c2b4 1.1px, transparent 1.1px);
+      background-size: 20px 20px;
+      padding: 40px 40px 40px 85px;
+      position: relative;
+      border-radius: 16px;
+      border: 1px solid #d6d3cc;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+      min-height: 90vh;
+      opacity: 0;
+      transform: translateY(15px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      perspective: 1500px; /* 3D perspective context for page turn animation */
+    }
+    .notebook-container.loaded {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── METAL SPIRALS ─── */
+    .spirals-binding {
+      position: absolute;
+      left: 20px;
+      top: 30px;
+      bottom: 30px;
+      width: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      zIndex: 10;
+      pointer-events: none;
+    }
+    .spiral-ring {
+      display: flex;
+      align-items: center;
+      height: 18px;
+    }
+    .paper-hole {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4b4841;
+      box-shadow: inset 0 1px 1px rgba(0,0,0,0.6);
+      margin-right: 3px;
+    }
+    .metal-loop {
+      width: 24px;
+      height: 8px;
+      border-radius: 4px/8px;
+      border: 1.5px solid #8c887e;
+      background: linear-gradient(to right, #f2eff6, #9c988f, #f2eff6);
+      box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+      transform: rotate(-12deg) translateY(-2px);
+    }
+
+    /* ─── MARGIN LINE ─── */
+    .margin-line {
+      position: absolute;
+      left: 65px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #fca5a5;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      margin-bottom: 24px;
+    }
+    .badges-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge.blue { background: #f0f6ff; color: #1e40af; border: 0.5px solid #c3d9f7; }
+    .badge.teal { background: #effcf8; color: #065f46; border: 0.5px solid #a7f3d0; }
+    .badge.purple { background: #f5f0ff; color: #5b21b6; border: 0.5px solid #d8ccf5; }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+      display: inline-block;
+      padding: 8px 16px;
+      background: #ffffff;
+      border: 1px solid #d6d3cc;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .meta-subtitle {
+      font-size: 12.5px;
+      color: #787470;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    /* ─── TABS ─── */
+    .tabs-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      border-bottom: 0.5px solid #e6e4de;
+      padding-bottom: 12px;
+    }
+    .tab-btn {
+      font-family: 'Montserrat', sans-serif;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #787470;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn::after {
+      content: '➔';
+      font-size: 9px;
+      display: inline-block;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      opacity: 0.5;
+    }
+    .tab-btn:hover {
+      color: #1a1a1a;
+      transform: translateY(-1px);
+    }
+    .tab-btn:hover::after {
+      transform: translateX(2px);
+      opacity: 0.9;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: #1a1a1a;
+      border: 1px solid #d6d3cc;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .tab-btn.active::after {
+      transform: rotate(90deg);
+      opacity: 1;
+      color: #1a1a1a;
+    }
+
+    /* ─── SECTION TITLE ─── */
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      font-weight: 750;
+      color: #1a1a1a;
+      margin: 28px 0 16px;
+      padding: 8px 14px;
+      background: #fdfcf7;
+      border: 1px solid #d6d3cc;
+      border-left: 4px solid #4b4841;
+      border-radius: 6px;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    /* ─── CARDS ─── */
+    .card {
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 14.5px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .card-sub {
+      font-size: 12px;
+      opacity: 0.8;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .card-content {
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* Color variations */
+    .c-purple { background: #f5f0ff; border: 0.5px solid #d8ccf5; color: #5b21b6; }
+    .c-teal   { background: #effcf8; border: 0.5px solid #a7f3d0; color: #065f46; }
+    .c-coral  { background: #fef2f2; border: 0.5px solid #fecaca; color: #991b1b; }
+    .c-blue   { background: #f0f6ff; border: 0.5px solid #c3d9f7; color: #1e40af; }
+    .c-amber  { background: #fffbeb; border: 0.5px solid #fde68a; color: #92400e; }
+    .c-green  { background: #f0fdf4; border: 0.5px solid #bbf7d0; color: #166534; }
+    .c-gray   { background: #f8f7f4; border: 0.5px solid #d6d3cc; color: #44403c; }
+    .c-red    { background: #fef2f2; border: 0.5px solid #fecaca; color: #991b1b; }
+
+    /* ─── ARROWS ─── */
+    .arrow-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      margin: 8px 0;
+    }
+    .arrow-label {
+      font-size: 10px;
+      color: #787470;
+    }
+    .arrow-svg {
+      width: 16px;
+      height: 18px;
+    }
+
+    /* ─── GRID LAYOUTS ─── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 600px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─── TAB CONTENT PANELS ─── */
+    .tab-content {
+      display: none;
+      opacity: 0;
+    }
+    .tab-content.active {
+      display: block;
+      animation: pageTurn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      transform-origin: left center;
+      backface-visibility: hidden;
+    }
+    @keyframes pageTurn {
+      0% {
+        opacity: 0;
+        transform: rotateY(-12deg) scale(0.99) translateX(15px);
+      }
+      100% {
+        opacity: 1;
+        transform: rotateY(0) scale(1) translateX(0);
+      }
+    }
+
+    /* ─── ML SUB-TABS ─── */
+    .subtabs-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .subtab-btn {
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      background: transparent;
+      border: 0.5px solid #e6e4de;
+      color: #787470;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .subtab-btn.active {
+      background: #effcf8;
+      color: #065f46;
+      border: 0.5px solid #a7f3d0;
+    }
+
+    /* ─── MICROSERVICE GRID ─── */
+    .microservice-card {
+      border: 0.5px solid #d6d3cc;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .microservice-header {
+      padding: 7px 13px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .microservice-body {
+      padding: 9px 13px;
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 12px;
+      background: #ffffff;
+    }
+    @media (max-width: 600px) {
+      .microservice-body {
+        grid-template-columns: 1fr;
+      }
+    }
+    .microservice-detail {
+      font-size: 12px;
+      color: #4a4a4a;
+      line-height: 1.6;
+    }
+    .microservice-ports {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .port-badge {
+      font-size: 11px;
+      font-family: monospace;
+      background: #fdfcf7;
+      border: 0.5px solid #e6e4de;
+      border-radius: 4px;
+      padding: 2px 7px;
+      color: #4a4a4a;
+    }
+
+    /* ─── LAYER CONTAINER ─── */
+    .layer-card {
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .layer-header {
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .layer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+    }
+    @media (max-width: 600px) {
+      .layer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .layer-item {
+      background: #ffffff;
+      padding: 9px 12px;
+    }
+    .layer-item-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 3px;
+    }
+    .layer-item-detail {
+      font-size: 11.5px;
+      color: #4a4a4a;
+      line-height: 1.5;
+    }
+
+    /* ─── PIPELINE STEP CARD ─── */
+    .pipeline-step {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .pipeline-header {
+      padding: 7px 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pipeline-step-num {
+      font-size: 11px;
+      font-weight: 500;
+      opacity: 0.7;
+    }
+    .pipeline-step-title {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .pipeline-io {
+      padding: 9px 13px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+    }
+    .io-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: #787470;
+      margin-bottom: 2px;
+    }
+    .io-val {
+      font-size: 12px;
+      color: #4a4a4a;
+    }
+    .pipeline-desc {
+      padding: 8px 13px;
+      font-size: 12px;
+      color: #4a4a4a;
+      line-height: 1.6;
+      background: #ffffff;
+    }
+
+    /* ─── CODE BLOCK ─── */
+    pre {
+      font-family: monospace;
+      font-size: 11.5px;
+      background: #fdfcf7;
+      border: 0.5px solid #d6d3cc;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #4a4a4a;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      text-align: center;
+      margin-top: 56px;
+      padding: 28px 24px;
+      border-top: 1px solid #d6d3cc;
+    }
+    .footer-desc {
+      color: #787470;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 14px;
+    }
+    .footer-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 10px;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      align-items: center;
+    }
+    .footer-icon-link {
+      color: #44403c;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+    }
+    .footer-icon-link:hover {
+      color: #1a1a1a;
+    }
+
+    /* ─── RESPONSIVE / MOBILE FRIENDLY ─── */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px 8px;
+      }
+      .notebook-container {
+        padding: 24px 16px 24px 48px;
+        background-size: 16px 16px;
+        border-radius: 12px;
+        min-height: 95vh;
+        width: 100%;
+      }
+      .margin-line {
+        left: 36px;
+      }
+      .spirals-binding {
+        left: 8px;
+        top: 20px;
+        bottom: 20px;
+        width: 20px;
+      }
+      .spiral-ring {
+        height: 14px;
+      }
+      .paper-hole {
+        width: 5px;
+        height: 5px;
+        margin-right: 2px;
+      }
+      .metal-loop {
+        width: 15px;
+        height: 5px;
+        border-width: 1px;
+      }
+      h1 {
+        font-size: 20px;
+        margin-bottom: 2px;
+      }
+      .meta-subtitle {
+        font-size: 11px;
+      }
+      .tabs-bar {
+        gap: 4px;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+      }
+      .tab-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+        border-radius: 6px;
+      }
+      .section-title {
+        font-size: 14px;
+        margin: 18px 0 8px;
+      }
+      .card {
+        padding: 12px 14px;
+        margin-bottom: 8px;
+      }
+      .card-title {
+        font-size: 13.5px;
+      }
+      .card-sub {
+        font-size: 11px;
+      }
+      .card-content {
+        font-size: 11px;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .pipeline-io {
+        grid-template-columns: 1fr;
+        gap: 4px;
+        text-align: left !important;
+      }
+      .pipeline-io div {
+        text-align: left !important;
+      }
+      .pipeline-io svg {
+        transform: rotate(90deg);
+        margin: 4px auto;
+        display: block;
+      }
+      .microservice-body {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .layer-grid {
+        grid-template-columns: 1fr;
+      }
+      .subtabs-bar {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING ANIMATION -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <div style="font-family: sans-serif; font-size: 14px; color: #787470;">Initializing Notebook View...</div>
+  </div>
+
+  <!-- NOTEBOOK CONTAINER -->
+  <div class="notebook-container" id="notebook">
+    
+    <!-- METAL SPIRALS -->
+    <div class="spirals-binding" id="spiral-binding-container"></div>
+
+    <!-- MARGIN LINE -->
+    <div class="margin-line"></div>
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="badges-row">
+        <span class="badge blue">HDFC Clone</span>
+        <span class="badge teal">Behavioural Biometrics</span>
+        <span class="badge purple">Full System Architecture</span>
+      </div>
+      <h1>🏦 Behavioural Biometrics Architecture</h1>
+      <div class="meta-subtitle">
+        Android + Desktop · 39 sensors · ML pipeline · Risk engine · HITL governance
+      </div>
+    </div>
+
+    <!-- TABS BAR -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" onclick="switchTab('overview')">System overview</button>
+      <button class="tab-btn" onclick="switchTab('android')">Android app architecture</button>
+      <button class="tab-btn" onclick="switchTab('dataflow')">Data flow pipeline</button>
+      <button class="tab-btn" onclick="switchTab('ml')">ML training & prediction</button>
+      <button class="tab-btn" onclick="switchTab('backend')">Backend & storage</button>
+      <button class="tab-btn" onclick="switchTab('desktop')">Desktop app architecture</button>
+      <button class="tab-btn" onclick="switchTab('hitl')">HITL & governance</button>
+    </div>
+
+    <!-- ─── TAB 1: SYSTEM OVERVIEW ─── -->
+    <div id="overview" class="tab-content active">
+      <div class="card c-gray" style="margin-bottom: 14px;">
+        <div class="card-content" style="font-size: 13px;">
+          <strong>What this system does:</strong> The HDFC Bank app clone captures 39 mobile/desktop sensor signals continuously during a banking session. These signals are processed through a feature pipeline, stored in a time-series database, and used to train a per-user behavioral model. Every subsequent session is scored in real time — if behavior deviates, the risk engine escalates (step-up auth, block, alert).
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card c-blue">
+          <div class="card-title">Zone 1 — Data collection</div>
+          <div class="card-sub">Android / Desktop app layer</div>
+          <div class="card-content">
+            39 sensors polled continuously. Raw events buffered locally. Batched every 2 seconds and sent to collection API.
+          </div>
+        </div>
+        <div class="card c-purple">
+          <div class="card-title">Zone 2 — Feature engineering</div>
+          <div class="card-sub">Stream processing layer</div>
+          <div class="card-content">
+            Kafka ingests raw events. Flink computes windowed features (mean, variance, FFT, gesture shape) in real time.
+          </div>
+        </div>
+        <div class="card c-teal">
+          <div class="card-title">Zone 3 — ML engine</div>
+          <div class="card-sub">Training + inference layer</div>
+          <div class="card-content">
+            Per-user LSTM/Transformer model trained on enrolled sessions. Online scoring returns risk score 0.0–1.0 per session event.
+          </div>
+        </div>
+        <div class="card c-coral">
+          <div class="card-title">Zone 4 — Risk & governance</div>
+          <div class="card-sub">Decision + audit layer</div>
+          <div class="card-content">
+            Rule engine + ML score fused. Decisions: allow / step-up / block. All decisions logged to immutable audit ledger.
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow-container">
+        <span class="arrow-label">end-to-end flow</span>
+        <svg class="arrow-svg" viewBox="0 0 16 18"><path d="M8 2v11M4 10l4 5 4-5" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <!-- Linear flow list -->
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;" class="c-blue">1</div>
+          <div class="card c-blue" style="flex: 1; margin: 0; padding: 8px 12px;">
+            <div style="font-size: 13px; font-weight: 600;">User opens HDFC clone app</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Login triggers enrollment check. Sensor collection starts immediately on app launch.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;" class="c-blue">2</div>
+          <div class="card c-blue" style="flex: 1; margin: 0; padding: 8px 12px;">
+            <div style="font-size: 13px; font-weight: 600;">39 sensors polled at high frequency</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Accel, gyro, touch, GPS, mic, BLE, camera — all captured via platform sensor APIs.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;" class="c-amber">3</div>
+          <div class="card c-amber" style="flex: 1; margin: 0; padding: 8px 12px;">
+            <div style="font-size: 13px; font-weight: 600;">Raw events → Edge buffer → Kafka</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Events batched in-app. Sent via HTTPS to collection API which pushes to Kafka topic.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;" class="c-purple">4</div>
+          <div class="card c-purple" style="flex: 1; margin: 0; padding: 8px 12px;">
+            <div style="font-size: 13px; font-weight: 600;">Flink stream processor</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Computes features per 2s window. Outputs feature vector [300 floats] per user session event.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;" class="c-teal">5</div>
+          <div class="card c-teal" style="flex: 1; margin: 0; padding: 8px 12px;">
+            <div style="font-size: 13px; font-weight: 600;">ML inference engine</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Feature vector scored against enrolled user model. Returns risk_score + anomaly_flags.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;" class="c-coral">6</div>
+          <div class="card c-coral" style="flex: 1; margin: 0; padding: 8px 12px;">
+            <div style="font-size: 13px; font-weight: 600;">Risk engine decision</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Fuses ML score + rule engine + device trust signals → ALLOW / STEP-UP / BLOCK.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;" class="c-green">7</div>
+          <div class="card c-green" style="flex: 1; margin: 0; padding: 8px 12px;">
+            <div style="font-size: 13px; font-weight: 600;">Response to app + audit log</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Decision pushed to app via WebSocket. All events written to immutable audit ledger.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB 2: ANDROID APP ARCHITECTURE ─── -->
+    <div id="android" class="tab-content">
+      <div class="card c-gray" style="margin-bottom: 10px;">
+        <div class="card-content" style="font-size: 12px;">
+          The Android app has 5 internal layers. The UI is a pixel-faithful HDFC clone. Below it, a background service runs the Sensor Abstraction Layer — invisible to the user, always collecting. Features are extracted on-device (raw sensor data never leaves the phone), then feature vectors are sent over a hardened transport to the backend.
+        </div>
+      </div>
+
+      <!-- UI Layer -->
+      <div class="layer-card" style="border: 0.5px solid #c3d9f7;">
+        <div class="layer-header c-blue">UI Layer — HDFC clone frontend (React Native / Jetpack Compose)</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">Login screen</div>
+            <div class="layer-item-detail">Captures typing cadence from password field. Face ID / fingerprint via BiometricPrompt.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Dashboard</div>
+            <div class="layer-item-detail">Touch heatmap, scroll velocity, session time, navigation path recorded.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Transfer screen</div>
+            <div class="layer-item-detail">Amount field keystroke timing, pressure, swipe-to-confirm gesture captured.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Settings / Profile</div>
+            <div class="layer-item-detail">App usage pattern. Session duration. Screen orientation events.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAL Layer -->
+      <div class="layer-card" style="border: 0.5px solid #d8ccf5;">
+        <div class="layer-header c-purple">Sensor Abstraction Layer (SAL) — runs as a background service</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">MotionCollector</div>
+            <div class="layer-item-detail">Accel + Gyro + Rotation at 50–100 Hz via SensorEventListener. Buffers in circular array.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">TouchCollector</div>
+            <div class="layer-item-detail">MotionEvent hook: X/Y/pressure/size/velocity per pointer. Injected via AccessibilityService overlay.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">LocationCollector</div>
+            <div class="layer-item-detail">GPS (1 Hz), Wi-Fi RSSI scan (every 30s), BLE RSSI (passive), cell tower ID.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">EnvCollector</div>
+            <div class="layer-item-detail">Ambient light, proximity, barometer, mic energy level (no raw audio stored).</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">BiometricCollector</div>
+            <div class="layer-item-detail">Fingerprint pass/fail events, face unlock events, PPG (heart rate) if available.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">SystemCollector</div>
+            <div class="layer-item-detail">Screen-on/off events, app foreground changes, battery state, charging state.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edge Layer -->
+      <div class="layer-card" style="border: 0.5px solid #fde68a;">
+        <div class="layer-header c-amber">Edge Processing Layer — runs on-device (Privacy-preserving)</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">Feature extractor</div>
+            <div class="layer-item-detail">Computes statistical features locally: mean, std-dev, FFT peaks, gesture shape descriptors. Raw sensor bytes never leave device.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Local risk scorer</div>
+            <div class="layer-item-detail">Lightweight TFLite model for on-device pre-screening. Flags extreme anomalies before sending upstream.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Event buffer</div>
+            <div class="layer-item-detail">SQLite ring buffer (max 10 MB). Holds last 60s of feature vectors. Retry queue for failed uploads.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Privacy filter</div>
+            <div class="layer-item-detail">Strips PII (GPS coordinates → geohash precision 6, mic → energy only). Applies differential noise.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transport Layer -->
+      <div class="layer-card" style="border: 0.5px solid #a7f3d0;">
+        <div class="layer-header c-teal">Network Transport Layer</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">Batch upload (HTTPS/2)</div>
+            <div class="layer-item-detail">Feature vectors batched every 2s. POST /api/v1/biometric/events. JWT auth + device attestation token.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">WebSocket (WSS)</div>
+            <div class="layer-item-detail">Persistent connection for real-time risk decisions. Server pushes: ALLOW | STEP_UP | BLOCK.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Device attestation</div>
+            <div class="layer-item-detail">Google Play Integrity API token included in every batch. Proves genuine unrooted device.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Certificate pinning</div>
+            <div class="layer-item-detail">HPKP pins for API endpoints. Prevents MITM. Bypass = session blocked server-side.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compliance Layer -->
+      <div class="layer-card" style="border: 0.5px solid #fecaca;">
+        <div class="layer-header c-coral">Security & Compliance Layer (on-device)</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">TEE / Keystore</div>
+            <div class="layer-item-detail">Biometric keys stored in Android Keystore (hardware-backed). Never exported to app process.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Data-at-rest encryption</div>
+            <div class="layer-item-detail">AES-256-GCM for local SQLite buffer. Key in Keystore.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Root / emulator detection</div>
+            <div class="layer-item-detail">Checks: SafetyNet, frida presence, Magisk, known emulator props. Locks session if detected.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Accessibility abuse guard</div>
+            <div class="layer-item-detail">Detects other apps using AccessibilityService (potential keyloggers). Warns user.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB 3: DATA FLOW PIPELINE ─── -->
+    <div id="dataflow" class="tab-content">
+      <div class="card c-gray" style="margin-bottom: 14px;">
+        <div class="card-content" style="font-size: 12px;">
+          This is the complete data journey — from raw sensor byte on the phone to a risk decision pushed back to the user in under 200ms.
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Step 1 -->
+        <div class="pipeline-step" style="border: 0.5px solid #c3d9f7;">
+          <div class="pipeline-header c-blue">
+            <span class="pipeline-step-num">Step 1</span>
+            <span class="pipeline-step-title">Sensor polling (on-device)</span>
+          </div>
+          <div class="pipeline-io">
+            <div>
+              <div class="io-label">INPUT</div>
+              <div class="io-val">39 sensor APIs at 1–200 Hz</div>
+            </div>
+            <svg width="28" height="16" viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#c3d9f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="text-align: right;">
+              <div class="io-label">OUTPUT</div>
+              <div class="io-val">[timestamp, sensor_id, raw_vector]</div>
+            </div>
+          </div>
+          <div class="pipeline-desc">
+            Each sensor has its own polling thread. Accel/Gyro at 100 Hz. Touch events are interrupt-driven (every finger move). Location at 1 Hz. All events tagged with monotonic clock timestamp.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; margin: 2px 0;">
+          <svg width="16" height="18" viewBox="0 0 16 18"><path d="M8 2v11M4 10l4 5 4-5" fill="none" stroke="#d6d3cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="pipeline-step" style="border: 0.5px solid #fde68a;">
+          <div class="pipeline-header c-amber">
+            <span class="pipeline-step-num">Step 2</span>
+            <span class="pipeline-step-title">On-device feature extraction (2s window)</span>
+          </div>
+          <div class="pipeline-io">
+            <div>
+              <div class="io-label">INPUT</div>
+              <div class="io-val">Raw sensor events in 2s sliding window</div>
+            </div>
+            <svg width="28" height="16" viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#fde68a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="text-align: right;">
+              <div class="io-label">OUTPUT</div>
+              <div class="io-val">Feature vector: ~300 floats</div>
+            </div>
+          </div>
+          <div class="pipeline-desc">
+            Window features computed: statistical (mean, std, min, max, skew, kurtosis), frequency domain (FFT top-5 peaks), gesture shape (DTW distance from template), cross-sensor correlation (accel × gyro tilt). No raw data stored beyond this point.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; margin: 2px 0;">
+          <svg width="16" height="18" viewBox="0 0 16 18"><path d="M8 2v11M4 10l4 5 4-5" fill="none" stroke="#d6d3cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="pipeline-step" style="border: 0.5px solid #fde68a;">
+          <div class="pipeline-header c-amber">
+            <span class="pipeline-step-num">Step 3</span>
+            <span class="pipeline-step-title">Privacy transform</span>
+          </div>
+          <div class="pipeline-io">
+            <div>
+              <div class="io-label">INPUT</div>
+              <div class="io-val">Raw feature vector with location</div>
+            </div>
+            <svg width="28" height="16" viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#fde68a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="text-align: right;">
+              <div class="io-label">OUTPUT</div>
+              <div class="io-val">Privacy-safe feature vector</div>
+            </div>
+          </div>
+          <div class="pipeline-desc">
+            GPS → geohash-6 (±0.6km accuracy). Mic → energy band histogram (no waveform). Face → landmark distances only (no image). Differential noise ε=0.1 added to continuous features. User ID → session_token (no raw PII in transit).
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; margin: 2px 0;">
+          <svg width="16" height="18" viewBox="0 0 16 18"><path d="M8 2v11M4 10l4 5 4-5" fill="none" stroke="#d6d3cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="pipeline-step" style="border: 0.5px solid #a7f3d0;">
+          <div class="pipeline-header c-teal">
+            <span class="pipeline-step-num">Step 4</span>
+            <span class="pipeline-step-title">Batch upload → Kafka ingest</span>
+          </div>
+          <div class="pipeline-io">
+            <div>
+              <div class="io-label">INPUT</div>
+              <div class="io-val">HTTPS POST batch of ~60 feature vectors</div>
+            </div>
+            <svg width="28" height="16" viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#a7f3d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="text-align: right;">
+              <div class="io-label">OUTPUT</div>
+              <div class="io-val">Kafka topic: biometric.events.raw</div>
+            </div>
+          </div>
+          <div class="pipeline-desc">
+            App batches 2s windows into 5s upload batches. Collection API validates JWT, Play Integrity token, schema, rate limits. Passes to Kafka topic partitioned by user_id. Kafka guarantees ordering per partition.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; margin: 2px 0;">
+          <svg width="16" height="18" viewBox="0 0 16 18"><path d="M8 2v11M4 10l4 5 4-5" fill="none" stroke="#d6d3cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="pipeline-step" style="border: 0.5px solid #d8ccf5;">
+          <div class="pipeline-header c-purple">
+            <span class="pipeline-step-num">Step 5</span>
+            <span class="pipeline-step-title">Flink stream processing</span>
+          </div>
+          <div class="pipeline-io">
+            <div>
+              <div class="io-label">INPUT</div>
+              <div class="io-val">Kafka topic: biometric.events.raw</div>
+            </div>
+            <svg width="28" height="16" viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#d8ccf5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="text-align: right;">
+              <div class="io-label">OUTPUT</div>
+              <div class="io-val">Kafka topic: biometric.features.enriched</div>
+            </div>
+          </div>
+          <div class="pipeline-desc">
+            Apache Flink job: (1) Joins feature vectors into 30s session windows. (2) Computes session-level features: typing rhythm autocorrelation, swipe consistency score, location context stability. (3) Enriches with device trust score from device registry. Outputs enriched feature blob per session event.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; margin: 2px 0;">
+          <svg width="16" height="18" viewBox="0 0 16 18"><path d="M8 2v11M4 10l4 5 4-5" fill="none" stroke="#d6d3cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="pipeline-step" style="border: 0.5px solid #a7f3d0;">
+          <div class="pipeline-header c-teal">
+            <span class="pipeline-step-num">Step 6</span>
+            <span class="pipeline-step-title">ML inference (online scoring)</span>
+          </div>
+          <div class="pipeline-io">
+            <div>
+              <div class="io-label">INPUT</div>
+              <div class="io-val">Enriched 30s session feature blob</div>
+            </div>
+            <svg width="28" height="16" viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#a7f3d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="text-align: right;">
+              <div class="io-label">OUTPUT</div>
+              <div class="io-val">risk_score [0–1] + anomaly_flags[]</div>
+            </div>
+          </div>
+          <div class="pipeline-desc">
+            Inference service loads per-user LSTM model from model registry (Redis-cached). Runs feature blob through model → risk_score. Also runs global anomaly detector (isolation forest) for first-time-seen patterns. Publishes to Kafka topic: biometric.scores.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; margin: 2px 0;">
+          <svg width="16" height="18" viewBox="0 0 16 18"><path d="M8 2v11M4 10l4 5 4-5" fill="none" stroke="#d6d3cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Step 7 -->
+        <div class="pipeline-step" style="border: 0.5px solid #fecaca;">
+          <div class="pipeline-header c-coral">
+            <span class="pipeline-step-num">Step 7</span>
+            <span class="pipeline-step-title">Risk engine decision fusion</span>
+          </div>
+          <div class="pipeline-io">
+            <div>
+              <div class="io-label">INPUT</div>
+              <div class="io-val">ML score + rule engine + device trust</div>
+            </div>
+            <svg width="28" height="16" viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#fecaca" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="text-align: right;">
+              <div class="io-label">OUTPUT</div>
+              <div class="io-val">Decision: ALLOW / STEP_UP / BLOCK</div>
+            </div>
+          </div>
+          <div class="pipeline-desc">
+            Combines: ML risk score (weight 0.6), rule engine (device rooted, new SIM, unusual location — weight 0.3), device trust score (weight 0.1). Thresholds: &lt;0.3 ALLOW, 0.3–0.7 STEP_UP (OTP/fingerprint re-auth), &gt;0.7 BLOCK + alert ops.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; margin: 2px 0;">
+          <svg width="16" height="18" viewBox="0 0 16 18"><path d="M8 2v11M4 10l4 5 4-5" fill="none" stroke="#d6d3cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Step 8 -->
+        <div class="pipeline-step" style="border: 0.5px solid #bbf7d0;">
+          <div class="pipeline-header c-green">
+            <span class="pipeline-step-num">Step 8</span>
+            <span class="pipeline-step-title">Decision delivery + audit</span>
+          </div>
+          <div class="pipeline-io">
+            <div>
+              <div class="io-label">INPUT</div>
+              <div class="io-val">Risk engine decision</div>
+            </div>
+            <svg width="28" height="16" viewBox="0 0 28 16"><path d="M2 8h20M18 4l5 4-5 4" fill="none" stroke="#bbf7d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="text-align: right;">
+              <div class="io-label">OUTPUT</div>
+              <div class="io-val">WebSocket push to app + audit log</div>
+            </div>
+          </div>
+          <div class="pipeline-desc">
+            Decision pushed to app via persistent WebSocket connection. App enforces it (block transaction, request re-auth). Simultaneously written to immutable audit log (append-only PostgreSQL table + Kafka audit topic). Regulators can replay full session.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB 4: ML TRAINING & PREDICTION ─── -->
+    <div id="ml" class="tab-content">
+      <div class="subtabs-bar">
+        <button class="subtab-btn active" id="subtab-enroll" onclick="switchSubTab('enroll')">Enrollment / training</button>
+        <button class="subtab-btn" id="subtab-infer" onclick="switchSubTab('infer')">Live inference</button>
+        <button class="subtab-btn" id="subtab-retrain" onclick="switchSubTab('retrain')">Continuous retraining</button>
+      </div>
+
+      <!-- ML SUBTAB: ENROLLMENT -->
+      <div id="ml-enroll" class="ml-subcontent">
+        <div class="card c-gray" style="margin-bottom: 10px;">
+          <div class="card-content" style="font-size: 12px;">
+            During the first 3–5 sessions after account creation or app install, the system is in <strong>enrollment mode</strong>. No risk scoring yet — the system is purely learning what "this user" looks like.
+          </div>
+        </div>
+        <div class="card c-blue">
+          <div class="card-title">Session 1–5 (enrollment window)</div>
+          <div class="card-content">User performs normal banking actions: login, view balance, transfer, logout. All sensor events collected with label = GENUINE.</div>
+        </div>
+        <div class="card c-amber">
+          <div class="card-title">Feature extraction & storage</div>
+          <div class="card-content">Feature vectors for each 2s window stored in TimescaleDB under user_id. Tagged as enrollment_data = true.</div>
+        </div>
+        <div class="card c-purple">
+          <div class="card-title">Per-user model training</div>
+          <div class="card-content">LSTM autoencoder trained on user's 5-session enrollment corpus. Input: 300-float feature vector. Output: reconstruction. High reconstruction error = anomaly.</div>
+        </div>
+        <div class="card c-teal">
+          <div class="card-title">Model artifacts stored</div>
+          <div class="card-content">Trained model (.pt file) + scaler parameters + threshold calibration stored in MLflow model registry. Tagged to user_id.</div>
+        </div>
+        <div class="card c-green">
+          <div class="card-title">Baseline profile built</div>
+          <div class="card-content">Statistical baseline: per-sensor mean/std, typical session duration, usual locations (geohash), typical app navigation sequence. Stored in Redis (fast lookup) + PostgreSQL (durable).</div>
+        </div>
+        <div class="card c-coral">
+          <div class="card-title">Enrollment complete → scoring mode</div>
+          <div class="card-content">After 5 sessions with sufficient data quality, user profile flagged as enrolled. Live scoring enabled. Threshold set at P99 of enrollment reconstruction error.</div>
+        </div>
+      </div>
+
+      <!-- ML SUBTAB: INFERENCE -->
+      <div id="ml-infer" class="ml-subcontent" style="display: none;">
+        <div class="card c-gray" style="margin-bottom: 10px;">
+          <div class="card-content" style="font-size: 12px;">
+            Every 2 seconds during a live session, the feature vector is scored. The entire path from sensor event to risk decision takes under 200ms end-to-end.
+          </div>
+        </div>
+        <div class="card c-blue">
+          <div class="card-title">Live feature vector arrives</div>
+          <div class="card-content">30s enriched session blob arrives at inference API from Flink. Format: JSON {user_id, session_id, feature_vector: [300 floats], context: {...}}.</div>
+        </div>
+        <div class="card c-teal">
+          <div class="card-title">Load user model (from Redis cache)</div>
+          <div class="card-content">Model registry lookup by user_id. If cached in Redis (TTL 30min) → use cached. Else load from S3 → warm Redis. Cold load = ~50ms. Hot = ~2ms.</div>
+        </div>
+        <div class="card c-purple">
+          <div class="card-title">LSTM autoencoder inference</div>
+          <div class="card-content">Feature vector passed through enrolled LSTM autoencoder. Computes reconstruction error (MSE). High error = input is unlike anything seen during enrollment.</div>
+        </div>
+        <div class="card c-amber">
+          <div class="card-title">Anomaly flag extraction</div>
+          <div class="card-content">Per-sensor anomaly flags raised where individual feature dimensions exceed 3σ from enrollment baseline. e.g. flags: [TYPING_SPEED_HIGH, SWIPE_PRESSURE_UNUSUAL, LOCATION_NEW].</div>
+        </div>
+        <div class="card c-coral">
+          <div class="card-title">Risk score computation</div>
+          <div class="card-content">risk_score = 0.6 × norm(reconstruction_error) + 0.25 × anomaly_flag_count/total_flags + 0.15 × context_risk_score. Clamped to [0.0, 1.0].</div>
+        </div>
+        <div class="card c-green">
+          <div class="card-title">Decision thresholds</div>
+          <div class="card-content">score &lt; 0.30 → ALLOW (transparent). 0.30–0.55 → soft flag (log only). 0.55–0.70 → STEP_UP (silent OTP or biometric re-auth). &gt; 0.70 → BLOCK session + ops alert.</div>
+        </div>
+      </div>
+
+      <!-- ML SUBTAB: RETRAIN -->
+      <div id="ml-retrain" class="ml-subcontent" style="display: none;">
+        <div class="card c-gray" style="margin-bottom: 10px;">
+          <div class="card-content" style="font-size: 12px;">
+            User behavior naturally drifts — injured hand, new phone, different commute. The system must continuously update its model without being fooled by a slow-moving attacker.
+          </div>
+        </div>
+        <div class="card c-green">
+          <div class="card-title">Confirmed-genuine sessions</div>
+          <div class="card-content">Sessions where user explicitly confirmed identity (completed OTP, biometric passed, no fraud report within 48h) are labeled CONFIRMED_GENUINE. Added to user's training corpus.</div>
+        </div>
+        <div class="card c-red">
+          <div class="card-title">Confirmed-fraud sessions</div>
+          <div class="card-content">Sessions flagged by fraud ops, user-reported, or from account takeover investigations labeled CONFIRMED_FRAUD. Used as negative examples. Never added to positive corpus.</div>
+        </div>
+        <div class="card c-amber">
+          <div class="card-title">Nightly retraining job</div>
+          <div class="card-content">Scheduled Airflow DAG runs nightly per user with &gt; 10 new confirmed-genuine sessions. Fine-tunes existing model with new data. Uses Adam optimizer, low LR (0.0001) to prevent catastrophic forgetting.</div>
+        </div>
+        <div class="card c-purple">
+          <div class="card-title">Model validation before deploy</div>
+          <div class="card-content">New model evaluated on held-out validation set (last 2 enrollment sessions). Must have lower reconstruction error than current model AND pass anomaly detection smoke tests. Else: keep current model.</div>
+        </div>
+        <div class="card c-teal">
+          <div class="card-title">Gradual rollout (canary deploy)</div>
+          <div class="card-content">New model served to 10% of that user's sessions for 24h. If no false-positive surge → promote to 100%. Rollback via feature flag in model registry.</div>
+        </div>
+        <div class="card c-coral">
+          <div class="card-title">Drift detection & forced re-enrollment</div>
+          <div class="card-content">If global reconstruction error increases monotonically for 7 days → device/behavior change too large. User prompted for re-enrollment (5 fresh sessions). Old model archived, not deleted.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB 5: BACKEND & STORAGE ─── -->
+    <div id="backend" class="tab-content">
+      <div class="section-title">Microservices</div>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+        <!-- Kong -->
+        <div class="microservice-card" style="border-color: #c3d9f7;">
+          <div class="microservice-header c-blue">API Gateway (Kong)</div>
+          <div class="microservice-body">
+            <div class="microservice-detail">Single ingress for all API traffic. JWT validation, rate limiting, device attestation check, TLS termination. Routes to downstream microservices.</div>
+            <div class="microservice-ports">
+              <span class="port-badge">POST /biometric/events</span>
+              <span class="port-badge">WS /session/realtime</span>
+              <span class="port-badge">POST /auth/login</span>
+              <span class="port-badge">GET /profile/risk-status</span>
+            </div>
+          </div>
+        </div>
+        <!-- Go -->
+        <div class="microservice-card" style="border-color: #fde68a;">
+          <div class="microservice-header c-amber">Collection Service (Go)</div>
+          <div class="microservice-body">
+            <div class="microservice-detail">Receives sensor event batches. Validates schema and Play Integrity token. De-duplicates events by (session_id, window_ts). Writes to Kafka topic: biometric.events.raw.</div>
+            <div class="microservice-ports">
+              <span class="port-badge">Kafka producer</span>
+              <span class="port-badge">Redis (dedup cache, TTL 60s)</span>
+              <span class="port-badge">Prometheus metrics</span>
+            </div>
+          </div>
+        </div>
+        <!-- Flink -->
+        <div class="microservice-card" style="border-color: #d8ccf5;">
+          <div class="microservice-header c-purple">Flink Stream Processor</div>
+          <div class="microservice-body">
+            <div class="microservice-detail">Stateful streaming job. Keyed by user_id. Maintains 30s session window state. Computes session-level features, joins with device registry, outputs enriched feature blobs.</div>
+            <div class="microservice-ports">
+              <span class="port-badge">Kafka consumer: raw</span>
+              <span class="port-badge">Kafka producer: enriched</span>
+              <span class="port-badge">RocksDB (local state)</span>
+            </div>
+          </div>
+        </div>
+        <!-- TorchServe -->
+        <div class="microservice-card" style="border-color: #a7f3d0;">
+          <div class="microservice-header c-teal">Inference Service (Python / TorchServe)</div>
+          <div class="microservice-body">
+            <div class="microservice-detail">Loads per-user LSTM models from MLflow. Redis-caches hot models. Scores enriched feature blobs. Publishes risk scores. Horizontally scalable — 1 instance per 5000 active users.</div>
+            <div class="microservice-ports">
+              <span class="port-badge">Kafka consumer: enriched</span>
+              <span class="port-badge">Redis (model cache)</span>
+              <span class="port-badge">MLflow model registry</span>
+              <span class="port-badge">Kafka producer: scores</span>
+            </div>
+          </div>
+        </div>
+        <!-- FastAPI -->
+        <div class="microservice-card" style="border-color: #fecaca;">
+          <div class="microservice-header c-coral">Risk Engine (Python / FastAPI)</div>
+          <div class="microservice-body">
+            <div class="microservice-detail">Fuses ML score with rule engine and device trust. Stateless service — all state in Redis. Publishes decisions. Triggers HITL workflows for BLOCK decisions.</div>
+            <div class="microservice-ports">
+              <span class="port-badge">Kafka consumer: scores</span>
+              <span class="port-badge">Redis (session state)</span>
+              <span class="port-badge">PostgreSQL (rule config)</span>
+              <span class="port-badge">Kafka producer: decisions</span>
+            </div>
+          </div>
+        </div>
+        <!-- Node ws -->
+        <div class="microservice-card" style="border-color: #bbf7d0;">
+          <div class="microservice-header c-green">Session Manager (Node.js / WebSocket)</div>
+          <div class="microservice-body">
+            <div class="microservice-detail">Maintains persistent WebSocket connections to app clients. Receives decisions from Kafka, pushes to correct client WebSocket connection. Handles reconnects with exponential backoff.</div>
+            <div class="microservice-ports">
+              <span class="port-badge">Kafka consumer: decisions</span>
+              <span class="port-badge">Redis (connection reg)</span>
+              <span class="port-badge">WSS clients (mobile/web)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Data stores</div>
+      <div class="grid-2">
+        <div class="card c-blue">
+          <div class="card-title">TimescaleDB</div>
+          <div class="card-sub">Time-series feature vectors</div>
+          <div class="card-content" style="font-size: 11.5px; opacity: 0.9;">Per-user feature vectors with timestamps. Hypertable partitioned by time + user_id. Retention: 90 days raw, 1 year aggregated.</div>
+        </div>
+        <div class="card c-purple">
+          <div class="card-title">PostgreSQL</div>
+          <div class="card-sub">User profiles, rules, audit</div>
+          <div class="card-content" style="font-size: 11.5px; opacity: 0.9;">User enrollment status, baseline profiles, risk rule config, fraud labels. Append-only audit_log table (no UPDATE/DELETE permitted).</div>
+        </div>
+        <div class="card c-teal">
+          <div class="card-title">Redis Cluster</div>
+          <div class="card-sub">Hot cache + session state</div>
+          <div class="card-content" style="font-size: 11.5px; opacity: 0.9;">Model cache (TTL 30min), session risk state, dedup keys, device trust scores. Sub-millisecond reads critical for &lt; 200ms latency SLA.</div>
+        </div>
+        <div class="card c-amber">
+          <div class="card-title">S3 / Object Storage</div>
+          <div class="card-sub">Model artifacts + raw batch</div>
+          <div class="card-content" style="font-size: 11.5px; opacity: 0.9;">MLflow model registry backend. Stores .pt model files, scaler params, training artifacts. Also stores encrypted raw event batches for compliance replay.</div>
+        </div>
+        <div class="card c-coral">
+          <div class="card-title">Kafka (MSK)</div>
+          <div class="card-sub">Event streaming backbone</div>
+          <div class="card-content" style="font-size: 11.5px; opacity: 0.9;">Topics: biometric.events.raw, biometric.features.enriched, biometric.scores, biometric.decisions, audit.trail. Retention 7 days. 3× replication.</div>
+        </div>
+        <div class="card c-green">
+          <div class="card-title">Elasticsearch</div>
+          <div class="card-sub">Audit search + fraud ops</div>
+          <div class="card-content" style="font-size: 11.5px; opacity: 0.9;">Fraud analysts search session events by user, time, risk score, anomaly flags. Kibana dashboards for real-time ops monitoring.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB 6: DESKTOP APP ARCHITECTURE ─── -->
+    <div id="desktop" class="tab-content">
+      <div class="card c-gray" style="margin-bottom: 10px;">
+        <div class="card-content" style="font-size: 12px;">
+          The Desktop version (Windows/macOS) targets the HDFC NetBanking web interface. It runs as an Electron app or a browser extension. Most sensors are software-derived — no hardware sensor bus like Android. Fewer raw signals but richer keyboard and mouse behavioral data.
+        </div>
+      </div>
+
+      <!-- UI Layer -->
+      <div class="layer-card" style="border: 0.5px solid #c3d9f7;">
+        <div class="layer-header c-blue">UI Layer — HDFC NetBanking clone (Electron / React)</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">Login page clone</div>
+            <div class="layer-item-detail">Username field: keystroke dwell time + flight time. Password: inter-key intervals, backspace rate. These alone are strong biometrics.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Dashboard / transfers</div>
+            <div class="layer-item-detail">Mouse movement trajectories, scroll wheel delta pattern, form fill order, copy-paste detection (flag for risk scoring).</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Invisible overlay (for Windows)</div>
+            <div class="layer-item-detail">Low-level keyboard and mouse hooks via win32 API (SetWindowsHookEx). Captures all events including mouse jitter and micro-pauses.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Browser extension mode</div>
+            <div class="layer-item-detail">Chrome/Firefox extension injects content script. Captures keydown/keyup, mousemove, scroll, focus/blur events on HDFC pages only.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAL equivalents -->
+      <div class="layer-card" style="border: 0.5px solid #d8ccf5;">
+        <div class="layer-header c-purple">Sensor Abstraction Layer — Desktop equivalents of the 39 signals</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">Keyboard dynamics</div>
+            <div class="layer-item-detail">Dwell time (key hold duration), flight time (gap between keys), digraph & trigraph latencies, error rate & correction pattern. ~8 features per keystroke.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Mouse dynamics</div>
+            <div class="layer-item-detail">Velocity, acceleration, curvature, click pressure (if force trackpad), hover dwell time, scroll velocity. Bezier curve fit to movement paths.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Device motion (laptop)</div>
+            <div class="layer-item-detail">Accelerometer in MacBook / some laptops via macOS CMMotionManager or Windows WinRT. Gait while typing on laptop.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Camera (WebRTC)</div>
+            <div class="layer-item-detail">Webcam optional. Face presence detection (MediaPipe). Blink rate, gaze direction during high-risk transactions. Requires explicit permission.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Audio (Web Audio API)</div>
+            <div class="layer-item-detail">Mic energy pattern (not raw audio). Background noise fingerprint. Keyboard click acoustics via WebAudio API at 44.1 kHz.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Network & environment</div>
+            <div class="layer-item-detail">IP geolocation, Wi-Fi SSID via browser/OS API, screen resolution + DPI, OS + browser UA string, timezone, installed font list (fingerprint).</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Browser fingerprint</div>
+            <div class="layer-item-detail">Canvas fingerprint, WebGL renderer, AudioContext fingerprint, font list. Changes = new device. Stable per user on same machine.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Session behavior</div>
+            <div class="layer-item-detail">Time of day, tab switches, idle intervals, page dwell time, back-button usage, copy-paste vs typing on amount fields.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edge Processing -->
+      <div class="layer-card" style="border: 0.5px solid #fde68a;">
+        <div class="layer-header c-amber">Edge Processing — same pattern as Android, different runtime</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">Web Worker (browser)</div>
+            <div class="layer-item-detail">Feature extraction runs in a dedicated Web Worker — off main thread, no UI jank. Computes keystroke digraph matrix, mouse path features every 2s.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Electron main process (app)</div>
+            <div class="layer-item-detail">Native node.js process handles low-level hooks, buffers events in memory, signs batches with device certificate.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">IndexedDB ring buffer</div>
+            <div class="layer-item-detail">Last 60s of feature vectors stored in IndexedDB. Retry queue for failed uploads (same logic as Android SQLite buffer).</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Privacy filter</div>
+            <div class="layer-item-detail">IP → /24 subnet only. Camera → presence boolean + landmark distances only (no image). Mic → frequency histogram only.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transport -->
+      <div class="layer-card" style="border: 0.5px solid #a7f3d0;">
+        <div class="layer-header c-teal">Network transport — identical to Android</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">HTTPS/2 batch upload</div>
+            <div class="layer-item-detail">Same Collection Service API. Feature vectors sent every 5s. Authenticated with session JWT + device certificate (stored in OS keychain).</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">WebSocket decision channel</div>
+            <div class="layer-item-detail">Same Session Manager. Risk decisions pushed via WSS. Electron app enforces: disable transfer button, show step-up auth modal.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Device attestation</div>
+            <div class="layer-item-detail">Windows: TPM 2.0 attestation via ECDSA key. macOS: Secure Enclave attestation. Browser: device certificate in OS keychain.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Certificate pinning</div>
+            <div class="layer-item-detail">Electron: custom Net module with pinned certs. Browser extension: CSP + HPKP headers. Same backend validation.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key differences -->
+      <div class="layer-card" style="border: 0.5px solid #fecaca;">
+        <div class="layer-header c-coral">Key differences vs Android (what desktop can NOT do)</div>
+        <div class="layer-grid">
+          <div class="layer-item">
+            <div class="layer-item-title">No accelerometer / gyroscope (usually)</div>
+            <div class="layer-item-detail">No gait data. No phone-holding angle. Only MacBook/surface tablets have motion sensors — and access is restricted on most OS.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">No GPS / BLE / cellular</div>
+            <div class="layer-item-detail">Location only via IP geolocation (~city level). No BLE beacon proximity. No cell tower ID. Location signal much weaker.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">No hardware biometrics on same device</div>
+            <div class="layer-item-detail">Windows Hello and Touch ID are available but results are opaque (pass/fail). No PPG, SpO2, iris scanner.</div>
+          </div>
+          <div class="layer-item">
+            <div class="layer-item-title">Richer keyboard + mouse biometrics</div>
+            <div class="layer-item-detail">Desktop compensates: 50–80 keystroke features vs 5–10 on mobile touchscreen. Mouse trajectory is a stronger signal than swipe.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAB 7: HITL & GOVERNANCE ─── -->
+    <div id="hitl" class="tab-content">
+      <div class="card c-gray" style="margin-bottom: 10px;">
+        <div class="card-content" style="font-size: 12px;">
+          Every side-effecting action (transfer, beneficiary add, password change) passes through the HITL gateway. The gateway checks the current session risk score before executing. This connects directly to your Phase 7 HITL work.
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Risk score → decision matrix</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;">
+          
+          <div style="display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: 9px;" class="c-green">
+            <div style="min-width: 90px; font-size: 11px; font-family: monospace; paddingTop: 1px;">0.00 – 0.30</div>
+            <span class="badge" style="background:#bbf7d0; color:#166534;">ALLOW</span>
+            <div style="font-size: 12px; opacity: 0.9; line-height: 1.5; flex: 1;">Transparent. Session continues. Event logged to audit trail. No user interruption.</div>
+          </div>
+
+          <div style="display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: 9px;" class="c-amber">
+            <div style="min-width: 90px; font-size: 11px; font-family: monospace; paddingTop: 1px;">0.30 – 0.55</div>
+            <span class="badge" style="background:#fde68a; color:#92400e;">SOFT FLAG</span>
+            <div style="font-size: 12px; opacity: 0.9; line-height: 1.5; flex: 1;">Log only. No user action. Fraud ops can see in dashboard. Used for model retraining data.</div>
+          </div>
+
+          <div style="display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: 9px;" class="c-amber">
+            <div style="min-width: 90px; font-size: 11px; font-family: monospace; paddingTop: 1px;">0.55 – 0.70</div>
+            <span class="badge" style="background:#fde68a; color:#92400e;">STEP-UP AUTH</span>
+            <div style="font-size: 12px; opacity: 0.9; line-height: 1.5; flex: 1;">Silent biometric re-auth (fingerprint/face). If fail → OTP to registered mobile. User sees: 'Please verify to continue'.</div>
+          </div>
+
+          <div style="display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: 9px;" class="c-coral">
+            <div style="min-width: 90px; font-size: 11px; font-family: monospace; paddingTop: 1px;">0.70 – 0.85</div>
+            <span class="badge" style="background:#fecaca; color:#991b1b;">HIGH STEP-UP</span>
+            <div style="font-size: 12px; opacity: 0.9; line-height: 1.5; flex: 1;">Strong auth required: biometric + OTP. Maker-checker for transfers &gt; ₹1L. Digital signature on action. Ops alerted.</div>
+          </div>
+
+          <div style="display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: 9px;" class="c-red">
+            <div style="min-width: 90px; font-size: 11px; font-family: monospace; paddingTop: 1px;">0.85 – 1.00</div>
+            <span class="badge" style="background:#fee2e2; color:#991b1b;">BLOCK</span>
+            <div style="font-size: 12px; opacity: 0.9; line-height: 1.5; flex: 1;">Session terminated. All pending transactions cancelled. Account flagged. Ops ticket auto-created. User notified via SMS + email.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <div class="section-title">Audit trail schema (every event)</div>
+        <pre><code>{
+  event_id:        UUID v7 (monotonic),
+  user_id:         SHA-256(account_number),
+  session_id:      UUID v4,
+  timestamp_utc:   ISO-8601 with µs precision,
+  risk_score:      float [0.0 – 1.0],
+  decision:        ALLOW | SOFT_FLAG | STEP_UP | BLOCK,
+  anomaly_flags:   string[],
+  ml_model_version: semver,
+  rule_engine_version: semver,
+  action_requested: { type, amount, beneficiary_hash },
+  auth_factors_presented: string[],
+  approver_id:     UUID | null (maker-checker),
+  digital_signature: base64(ECDSA-P256),
+  immutable:       true   // no UPDATE/DELETE on this table
+}</code></pre>
+      </div>
+
+      <div>
+        <div class="section-title">Governance controls</div>
+        <div class="grid-2">
+          <div class="card c-purple">
+            <div class="card-title">Maker-checker</div>
+            <div class="card-content">Transfers &gt; ₹1L require a second authorized user (relationship manager or ops) to approve. Both signatures logged.</div>
+          </div>
+          <div class="card c-blue">
+            <div class="card-title">Model governance</div>
+            <div class="card-content">No model deployed to production without: validation metrics pass, sign-off from ML lead, canary rollout, rollback plan in place.</div>
+          </div>
+          <div class="card c-teal">
+            <div class="card-title">Data retention</div>
+            <div class="card-content">Raw feature vectors: 90 days. Audit log: 7 years (RBI mandate). Model training data: 5 years. Biometric enrollment: user-deletable (GDPR Article 17).</div>
+          </div>
+          <div class="card c-coral">
+            <div class="card-title">Explainability</div>
+            <div class="card-content">Every STEP_UP / BLOCK decision accompanied by top-3 anomaly features in human-readable form. Fraud ops can read: 'Typing speed 3σ above baseline'.</div>
+          </div>
+          <div class="card c-amber">
+            <div class="card-title">False positive monitoring</div>
+            <div class="card-content">If STEP_UP rate for a user exceeds 20% over 7 days → auto-flag for model review. Prevents user friction from model drift.</div>
+          </div>
+          <div class="card c-red">
+            <div class="card-title">Right to explanation</div>
+            <div class="card-content">User can request explanation of any blocked transaction. System must return: time, risk score, top anomaly reasons. No raw biometric data exposed.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER WITH USER DETAILS -->
+    <div class="footer">
+      <p class="footer-desc">🏦 Behavioural Biometrics for Banking · HDFC Clone · Android + Desktop · 39 Sensors · Real-time ML Authentication</p>
+      <p class="footer-name">Krithika</p>
+      <div class="footer-links">
+        <a href="https://github.com/Krithiikaa" target="_blank" rel="noopener" title="GitHub" class="footer-icon-link">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+        <a href="https://ai-gizmo-29544405.figma.site/" target="_blank" rel="noopener" title="Portfolio" class="footer-icon-link">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- INTERACTION SCRIPTS -->
+  <script>
+    // Tab switching logic
+    function switchTab(tabId) {
+      // Hide all panels
+      document.querySelectorAll('.tab-content').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      // Show selected panel
+      document.getElementById(tabId).classList.add('active');
+
+      // Update button classes
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+    }
+
+    // ML sub-tabs switching logic
+    function switchSubTab(subtabId) {
+      // Hide all sub-panels
+      document.querySelectorAll('.ml-subcontent').forEach(subpanel => {
+        subpanel.style.display = 'none';
+      });
+      // Show selected sub-panel
+      document.getElementById('ml-' + subtabId).style.display = 'block';
+
+      // Update subtab buttons
+      document.querySelectorAll('.subtab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById('subtab-' + subtabId).classList.add('active');
+    }
+
+    // Dynamic spiral loop generation
+    const container = document.getElementById('spiral-binding-container');
+    const ringCount = 28;
+    for (let i = 0; i < ringCount; i++) {
+      const ring = document.createElement('div');
+      ring.className = 'spiral-ring';
+      ring.innerHTML = `
+        <div class="paper-hole"></div>
+        <div class="metal-loop"></div>
+      `;
+      container.appendChild(ring);
+    }
+
+    // Loader delay and reveal
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const loader = document.getElementById('loader');
+        loader.style.opacity = '0';
+        loader.style.visibility = 'hidden';
+        
+        const notebook = document.getElementById('notebook');
+        notebook.classList.add('loaded');
+      }, 700); // 700ms simulation loading delay
+    });
+  </script>
+</body>
+</html>
